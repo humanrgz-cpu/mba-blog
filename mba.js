@@ -40,10 +40,38 @@ const DEFAULT_USERS=[{username:"Master",password:"Qwerty.2248405",role:"master"}
 
     <div class="answer">${escapeHTML(l)}</div>`,a.appendChild(r)}function addToLog(e){let t=document.createElement("li");t.setAttribute("data-id",e.id),t.textContent=`[${e.category}] ${e.question}`;let l=document.createElement("button");l.textContent="Delete",l.style.marginLeft="10px",l.onclick=()=>{if("normal"===window.__currentRole){alert("Not allowed.");return}let l=document.querySelector(`details[data-id='${CSS.escape(String(e.id))}']`);l&&l.remove();let n=loadQAData();saveQAData(n=n.filter(t=>String(t.id)!==String(e.id))),t.remove(),loadQAData().length||(document.getElementById("logTitle").style.display="none")},t.appendChild(l),document.getElementById("changeLog").appendChild(t)}function escapeHTML(e){return String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}document.getElementById("loginBtn").onclick=()=>{let e,t=getRole(document.getElementById("loginUsername").value.trim(),document.getElementById("loginPassword").value.trim());if(!t){document.getElementById("loginMessage").textContent="Invalid username or password.";return}document.getElementById("loginScreen").style.display="none",document.getElementById("appContent").style.display="block",document.getElementById("searchArea").style.display="block",window.__currentRole=t,"normal"!==t&&(document.getElementById("toggleInputs").style.display="inline-block"),("master"===t||"admin"===t)&&(document.getElementById("manageUsersToggle").style.display="inline-block"),initApp()};
 
-// Example usage: after login button is clicked
-document.getElementById("loginBtn").addEventListener("click", () => {
-  const user = document.getElementById("loginUsername").value;
-  greetUser(user);
-});
+document.getElementById('loginBtn').onclick = () => {
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value.trim();
+  const role = getRole(u,p);
+  if (!role) { document.getElementById('loginMessage').textContent='Invalid username or password.'; return; }
+
+  // Show app
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appContent').style.display='block';
+  document.getElementById('searchArea').style.display='block';
+  window.__currentRole = role;
+
+  // Sidebar toggles
+  if (role!=='normal') document.getElementById('toggleInputs').style.display='inline-block';
+  if (role==='master'||role==='admin') document.getElementById('manageUsersToggle').style.display='inline-block';
+
+  // Set greeting (create target if missing)
+  const greetEl = document.getElementById('greeting') || (() => {
+    const h = document.querySelector('.container header');
+    const pEl = document.createElement('p');
+    pEl.id = 'greeting';
+    pEl.className = 'small';
+    pEl.style.fontWeight = '700';
+    pEl.style.color = '#2563eb';
+    h?.insertBefore(pEl, h.querySelector('.small')); // place before tip text
+    return pEl;
+  })();
+  greetEl.textContent = 'Hello Dear ' + u;
+
+  initApp();
+};
+
+
 
 
