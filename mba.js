@@ -37,4 +37,18 @@ const DEFAULT_USERS=[{username:"Master",password:"Qwerty.2248405",role:"master"}
       <button class="icon-btn editQA" title="Edit"></button>
       <button class="icon-btn playQA" title="Play"></button>
     </summary>
+
     <div class="answer">${escapeHTML(l)}</div>`,a.appendChild(r)}function addToLog(e){let t=document.createElement("li");t.setAttribute("data-id",e.id),t.textContent=`[${e.category}] ${e.question}`;let l=document.createElement("button");l.textContent="Delete",l.style.marginLeft="10px",l.onclick=()=>{if("normal"===window.__currentRole){alert("Not allowed.");return}let l=document.querySelector(`details[data-id='${CSS.escape(String(e.id))}']`);l&&l.remove();let n=loadQAData();saveQAData(n=n.filter(t=>String(t.id)!==String(e.id))),t.remove(),loadQAData().length||(document.getElementById("logTitle").style.display="none")},t.appendChild(l),document.getElementById("changeLog").appendChild(t)}function escapeHTML(e){return String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}document.getElementById("loginBtn").onclick=()=>{let e,t=getRole(document.getElementById("loginUsername").value.trim(),document.getElementById("loginPassword").value.trim());if(!t){document.getElementById("loginMessage").textContent="Invalid username or password.";return}document.getElementById("loginScreen").style.display="none",document.getElementById("appContent").style.display="block",document.getElementById("searchArea").style.display="block",window.__currentRole=t,"normal"!==t&&(document.getElementById("toggleInputs").style.display="inline-block"),("master"===t||"admin"===t)&&(document.getElementById("manageUsersToggle").style.display="inline-block"),initApp()};
+// Example: show greeting after login
+function greetUser(username) {
+  // Escape to avoid HTML injection
+  const safeName = username.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  document.getElementById("greeting").textContent = "Hello Dear " + safeName;
+}
+
+// Example usage: after login button is clicked
+document.getElementById("loginBtn").addEventListener("click", () => {
+  const user = document.getElementById("loginUsername").value;
+  greetUser(user);
+});
+
