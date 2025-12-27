@@ -1,204 +1,185 @@
-<script type="module">
-  // === Firebase setup ===
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+// ===== Firebase Setup =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-  // 🔧 Replace with your Firebase config
+// 🔧 Replace with your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyA1m80OnKDqLHrOyIMD3at1CblFfvh64X8",
-  authDomain: "mba-qa-46f51.firebaseapp.com",
-  projectId: "mba-qa-46f51",
-  storageBucket: "mba-qa-46f51.firebasestorage.app",
-  messagingSenderId: "554345717376",
-  appId: "1:554345717376:web:907bb2ae83e891a36ed065"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_APP_ID"
 };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-  // === User helper functions (Firestore instead of DEFAULT_USERS) ===
+window.__currentRole = null;
 
-  async function getRole(uid) {
-    const snap = await getDoc(doc(db, "users", uid));
-    return snap.exists() ? snap.data().role : "normal";
-  }
+// ===== Role Helpers =====
+async function getRole(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? snap.data().role : "normal";
+}
 
-  async function addOrUpdateUser(currentRole, email, password, role) {
-    if (currentRole === "normal") return { ok: false, msg: "Not allowed." };
-    if (currentRole === "admin" && role !== "normal") return { ok: false, msg: "Admin can only add/update Normal." };
-    if (role === "master" && currentRole !== "master") return { ok: false, msg: "Only Master can create Master." };
+async function addOrUpdateUser(currentRole, email, password, role) {
+  if (currentRole === "normal") return { ok: false, msg: "Not allowed." };
+  if (currentRole === "admin" && role !== "normal") return { ok: false, msg: "Admin can only add/update Normal." };
+  if (role === "master" && currentRole !== "master") return { ok: false, msg: "Only Master can create Master." };
 
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = userCred.user.uid;
-      await setDoc(doc(db, "users", uid), { role });
-      return { ok: true, msg: "User added/updated." };
-    } catch (err) {
-      console.error(err);
-      return { ok: false, msg: "Error adding/updating user." };
-    }
-  }
-
-  async function removeUser(currentRole, uid) {
-    if (currentRole === "admin") return { ok: false, msg: "Admin can only remove Normal." };
-
-    const snap = await getDoc(doc(db, "users", uid));
-    if (!snap.exists()) return { ok: false, msg: "User not found." };
-    if (snap.data().role === "master") return { ok: false, msg: "Cannot remove Master." };
-
-    await deleteDoc(doc(db, "users", uid));
-    return { ok: true, msg: "User removed." };
-  }
-
-  // === Login / Logout ===
-
-  document.getElementById('loginBtn').onclick = async () => {
-    const email = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
-
-    try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCred.user.uid;
-      const role = await getRole(uid);
-
-      window.__currentRole = role;
-
-      // Show app
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('appContent').style.display = 'block';
-      document.getElementById('searchArea').style.display = 'block';
-
-      if (role !== 'normal') document.getElementById('toggleInputs').style.display = 'inline-block';
-      if (role === 'master' || role === 'admin') document.getElementById('manageUsersToggle').style.display = 'inline-block';
-
-      const greetEl = document.getElementById('greeting');
-      if (greetEl) greetEl.textContent = `Hello Dear ${email}`;
-
-      initApp();
-    } catch (err) {
-      document.getElementById('loginMessage').textContent = 'Invalid email or password.';
-      console.error(err);
-    }
-  };
-
-  document.getElementById('logoutBtn').onclick = async () => {
-    await signOut(auth);
-    window.__currentRole = null;
-    document.getElementById('loginScreen').style.display = 'block';
-    document.getElementById('appContent').style.display = 'none';
-    document.getElementById('searchArea').style.display = 'none';
-    document.getElementById('greeting').textContent = '';
-  };
-
-  // === Auto check login state ===
-  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const role = await getRole(user.uid);
-      window.__currentRole = role;
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('appContent').style.display = 'block';
-    } else {
-      window.__currentRole = null;
-      document.getElementById('loginScreen').style.display = 'block';
-      document.getElementById('appContent').style.display = 'none';
-    }
-  });
-
-function initApp(){let e=document.querySelector(".container"),t=document.getElementById("backToTop");function l(){let e=speechSynthesis.getVoices(),t;return{male:e.find(e=>/male/i.test(e.name))||e.find(e=>/en/i.test(e.lang))||e[0],female:e.find(e=>/female/i.test(e.name))||e.find(e=>/en/i.test(e.lang))||e[0]}}window.addEventListener("scroll",()=>{let e=document.documentElement.scrollTop||document.body.scrollTop;t.style.display=e>200?"block":"none"}),t.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"})),document.getElementById("expandAll").onclick=()=>e.querySelectorAll("details").forEach(e=>e.open=!0),document.getElementById("collapseAll").onclick=()=>e.querySelectorAll("details").forEach(e=>e.open=!1),document.getElementById("printDoc").onclick=()=>{e.querySelectorAll(":scope > details").forEach(e=>{e.open=!0,e.querySelectorAll(".qa > details").forEach(e=>e.open=!0)}),setTimeout(()=>window.print(),150)},e.addEventListener("click",e=>{let t=e.target.closest(".expand-section"),l=e.target.closest(".collapse-section"),n=e.target.closest(".readCatQuestion"),a=e.target.closest(".readCatAnswer");function r(){let e=speechSynthesis.getVoices(),t;return{male:e.find(e=>/male/i.test(e.name))||e.find(e=>/en/i.test(e.lang))||e[0],female:e.find(e=>/female/i.test(e.name))||e.find(e=>/en/i.test(e.lang))||e[0]}}if(t&&t.closest("details")?.querySelectorAll(".qa > details").forEach(e=>e.open=!0),l&&l.closest("details")?.querySelectorAll(".qa > details").forEach(e=>e.open=!1),n){let o=n.closest("details"),s=Array.from(o.querySelectorAll(".qa > details > summary"));if(!s.length){alert("No questions in this category.");return}let i=s[Math.floor(Math.random()*s.length)],{male:d}=r(),c=new SpeechSynthesisUtterance(i.querySelector(".summary-text")?.textContent.trim()||i.textContent.trim());d&&(c.voice=d),speechSynthesis.speak(c),o.dataset.lastId=i.parentElement.getAttribute("data-id")||""}if(a){let u=a.closest("details"),m=u?.dataset?.lastId||"",y=(m?u.querySelector(`details[data-id='${m}']`):null)?.querySelector(".answer")?.textContent.trim()||"No answer found.",{female:g}=r(),p=new SpeechSynthesisUtterance(y);g&&(p.voice=g),speechSynthesis.speak(p)}});let n=null;document.getElementById("readRandom").onclick=()=>{let t=Array.from(e.querySelectorAll(".qa > details > summary"));if(!t.length){alert("No questions available.");return}let a=t[Math.floor(Math.random()*t.length)];n=a.parentElement;let{male:r}=l(),o=new SpeechSynthesisUtterance(a.querySelector(".summary-text")?.textContent.trim()||a.textContent.trim());r&&(o.voice=r),speechSynthesis.speak(o)},document.getElementById("readAnswer").onclick=()=>{if(!n){alert("No question has been read yet.");return}let e=n.querySelector(".answer")?.textContent.trim()||"No answer found.",{female:t}=l(),a=new SpeechSynthesisUtterance(e);t&&(a.voice=t),speechSynthesis.speak(a)},e.addEventListener("click",e=>{let t=e.target.closest(".playQA"),n=e.target.closest(".editQA"),a=e.target.closest(".deleteQA");if(t){e.stopPropagation();let r=t.closest("details"),o=r.querySelector(":scope > summary"),s=o.querySelector(".summary-text")?.textContent.trim()||o.textContent.trim(),i=r.querySelector(":scope > .answer")?.textContent.trim()||"",{male:d,female:c}=l(),u=new SpeechSynthesisUtterance(s);d&&(u.voice=d);let m=new SpeechSynthesisUtterance(i);c&&(m.voice=c),speechSynthesis.speak(u),speechSynthesis.speak(m)}if(n){if(e.stopPropagation(),"normal"===window.__currentRole){alert("Not allowed.");return}let y=n.closest("details"),g=y.querySelector(":scope > summary"),p=g.querySelector(".summary-text"),f=p?p.textContent.trim():g.textContent.trim(),E=y.querySelector(":scope > .answer"),A=E?.textContent.trim()||"",q=prompt("Edit question:",f);if(null==q)return;let v=prompt("Edit answer:",A);if(null==v)return;p?p.textContent=q:g.firstChild.textContent=q,E&&(E.textContent=v);let b=loadQAData(),h=y.getAttribute("data-id");saveQAData(b=b.map(e=>String(e.id)===String(h)?{...e,question:q,answer:v}:e))}if(a){if(e.stopPropagation(),"normal"===window.__currentRole){alert("Not allowed.");return}let w=a.closest("details"),S=w.getAttribute("data-id");w.remove();let I=loadQAData();saveQAData(I=I.filter(e=>String(e.id)!==String(S)));let C=document.querySelector(`#changeLog li[data-id='${CSS.escape(String(S))}']`);C&&C.remove(),loadQAData().length||(document.getElementById("logTitle").style.display="none")}});let a=document.getElementById("searchInput"),r=document.getElementById("searchResults");a.addEventListener("input",()=>{let t=a.value.toLowerCase().trim();if(r.innerHTML="",t)Array.from(e.querySelectorAll(".qa > details")).filter(e=>{let l=e.querySelector(":scope > summary .summary-text")?.textContent.toLowerCase()||e.querySelector(":scope > summary")?.textContent.toLowerCase()||"",n=e.querySelector(":scope > .answer")?.textContent.toLowerCase()||"";return l.includes(t)||n.includes(t)}).forEach(t=>{let l=t.querySelector(":scope > summary .summary-text")?.textContent.trim()||t.querySelector(":scope > summary")?.textContent.trim(),n=document.createElement("div");n.textContent=l||"(Question)",n.onclick=()=>{let l=t;for(;l&&"DETAILS"===l.tagName;)l.open=!0,l=l.parentElement?.closest("details");let n=new Set;for(l=t;l&&"DETAILS"===l.tagName;)n.add(l),l=l.parentElement?.closest("details");e.querySelectorAll("details").forEach(e=>{n.has(e)||(e.open=!1)}),t.scrollIntoView({behavior:"smooth",block:"center"}),e.querySelectorAll(".highlight").forEach(e=>e.classList.remove("highlight")),t.classList.add("flash"),setTimeout(()=>{t.classList.remove("flash"),t.classList.add("highlight")},3e3),r.innerHTML=""},r.appendChild(n)})});let o=document.getElementById("toggleInputs"),s=document.getElementById("userPanel");o.onclick=()=>{if("normal"===window.__currentRole){alert("Not allowed for Normal.");return}let e="block"===s.style.display;s.style.display=e?"none":"block",o.textContent=e?"Add New Q&A":"Hide Q&A Form"};let i=document.getElementById("manageUsersToggle"),d=document.getElementById("manageUsersPanel");function c(){let e=loadUsers(),t=document.getElementById("muList");t.innerHTML="",e.forEach(e=>{let l=document.createElement("li");l.textContent=`${e.username} — ${e.role}`,t.appendChild(l)})}i.onclick=()=>{var e;if("master"!==window.__currentRole&&"admin"!==window.__currentRole){alert("Not allowed.");return}let t;d.style.display="block"===d.style.display?"none":"block","block"===d.style.display&&(e=window.__currentRole,Array.from((t=document.getElementById("muRole")).options).forEach(e=>e.hidden=!1),"admin"===e&&(Array.from(t.options).forEach(e=>{"normal"!==e.value&&(e.hidden=!0)}),t.value="normal"),c())},document.getElementById("muAddBtn").onclick=()=>{let e=addOrUpdateUser(window.__currentRole,document.getElementById("muUsername").value.trim(),document.getElementById("muPassword").value.trim(),document.getElementById("muRole").value);alert(e.msg),e.ok&&c()},document.getElementById("muRemoveBtn").onclick=()=>{let e=removeUser(window.__currentRole,document.getElementById("muUsername").value.trim());alert(e.msg),e.ok&&c()},document.getElementById("muRefresh").onclick=c;let u=document.getElementById("categorySelect"),m=document.getElementById("newCategoryWrapper"),y=document.getElementById("newCategory");u.onchange=()=>{"__new__"===u.value?m.style.display="block":(m.style.display="none",y.value="")},document.getElementById("saveQA").onclick=()=>{if("normal"===window.__currentRole){alert("Not allowed for Normal.");return}let e=u.value;"__new__"===e&&(e=y.value.trim());let t=document.getElementById("newQuestion").value.trim(),l=document.getElementById("newAnswer").value.trim();if(!e||!t||!l){alert("Please fill all fields.");return}let n=String(Date.now());ensureSection(e),insertQA(e,t,l,n);let a=loadQAData();if(a.push({id:n,category:e,question:t,answer:l}),saveQAData(a),addToLog({id:n,category:e,question:t,answer:l}),document.getElementById("logTitle").style.display="block",!Array.from(u.options).some(t=>t.value===e)){let r=document.createElement("option");r.value=e,r.textContent=e,u.insertBefore(r,u.querySelector("option[value='__new__']"))}u.value="",m.style.display="none",y.value="",document.getElementById("newQuestion").value="",document.getElementById("newAnswer").value=""},document.getElementById("importExcel").onclick=()=>{if("normal"===window.__currentRole){alert("Not allowed for Normal.");return}let e=document.getElementById("excelFile").files[0];if(!e){alert("Please select an Excel file first.");return}let t=new FileReader;t.onload=e=>{let t=XLSX.read(new Uint8Array(e.target.result),{type:"array"}),l=t.Sheets[t.SheetNames[0]],n=XLSX.utils.sheet_to_json(l,{header:1}),a=loadQAData();n.slice(1).forEach(e=>{let[t,l,n]=e;if(!t||!l||!n)return;let r=String(Date.now()+Math.random());if(ensureSection(String(t)),insertQA(String(t),String(l),String(n),r),a.push({id:r,category:String(t),question:String(l),answer:String(n)}),addToLog({id:r,category:String(t),question:String(l),answer:String(n)}),!Array.from(u.options).some(e=>e.value===String(t))){let o=document.createElement("option");o.value=String(t),o.textContent=String(t),u.insertBefore(o,u.querySelector("option[value='__new__']"))}}),saveQAData(a),document.getElementById("logTitle").style.display="block",alert("Excel import complete.")},t.readAsArrayBuffer(e)},function(){var e;if(window.__qa_init__)return;function t(e){return String(e).replace(/[&<>"']/g,e=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[e])}function l(){return"q_"+Math.random().toString(36).slice(2,10)}function n(){try{return JSON.parse(localStorage.getItem("qaData"))||[]}catch{return[]}}function a(e){localStorage.setItem("qaData",JSON.stringify(e))}function r(e){let l=document.querySelector(".container")||document.body,n=document.createElement("details");return n.className="category",n.setAttribute("data-category",e),n.innerHTML=`
-      <summary class="rtl">${t(e)}</summary>
-      <div class="section-block">
-        <div class="section-toolbar">
-          <button class="expand-section">Expand</button>
-          <button class="collapse-section">Collapse</button>
-          <button class="readCatQuestion">Read Random Question</button>
-          <button class="readCatAnswer">Read Answer</button>
-        </div>
-        <div class="qa"></div>
-      </div>`,l.appendChild(n),n}window.__qa_init__=!0;let o=function e(){if("1"===localStorage.getItem("qaImported"))return n();let t=[];document.querySelectorAll("details.category").forEach(e=>{let n=e.querySelector("summary"),a=e.getAttribute("data-category")||(n?n.textContent.trim():"Category");e.setAttribute("data-category",a),e.querySelectorAll(".qa details").forEach(e=>{let n=e.getAttribute("data-id"),r=e.querySelector(".summary-text")?.textContent.trim()||"",o=e.querySelector(".answer")?.textContent.trim()||"";n||(n=l(),e.setAttribute("data-id",n)),t.push({id:n,category:a,question:r,answer:o})})});let r=new Set,o=new Set,s=[];return t.forEach(e=>{let t=e.id,l=(e.category||"")+"|"+(e.question||"").trim();!(t&&r.has(t))&&(o.has(l)||(r.add(t),o.add(l),s.push(e)))}),a(s),localStorage.setItem("qaImported","1"),s}();function s(e){let t=n(),l=t.findIndex(t=>t.id===e.id);l>=0?t[l]=e:t.push(e),a(t)}let i;document.querySelectorAll("details.category").forEach(e=>e.remove()),i={},o.forEach(e=>{let t=(e.category||"Uncategorized").trim();(i[t]||=[]).push(e)}),Object.keys(i).forEach(e=>{let n=r(e).querySelector(".qa"),a=new Set;i[e].forEach(e=>{let r=e.id||(e.id=l());if(a.has(r))return;let o=document.createElement("details");o.setAttribute("data-id",r),o.innerHTML=`
-          <summary>
-            <span class="summary-text">${t(e.question||"")}</span>
-            <button class="icon-btn deleteQA"></button>
-            <button class="icon-btn editQA"></button>
-            <button class="icon-btn playQA"></button>
-          </summary>
-          <div class="answer">${t(e.answer||"")}</div>`,n.appendChild(o),a.add(r)})}),document.addEventListener("click",e=>{let t=e.target.closest(".deleteQA");if(t){var l;let r=t.closest("details[data-id]");if(!r)return;l=r.getAttribute("data-id"),a(n().filter(e=>e.id!==l)),r.remove();return}let o=e.target.closest(".editQA");if(o){let i=o.closest("details[data-id]");if(!i)return;let d=i.getAttribute("data-id"),c=i.closest("details.category")?.getAttribute("data-category")||"Uncategorized",u=i.querySelector(".summary-text"),m=i.querySelector(".answer"),y;s({id:d,category:c,question:u?.textContent.trim()||"",answer:m?.textContent.trim()||""});return}}),window.addNewQA=function(e,n,a){let o=l();s({id:o,category:e,question:n,answer:a});let i=document.querySelector(`details.category[data-category="${e}"]`);i||(i=r(e));let d=i.querySelector(".qa"),c=document.createElement("details");c.setAttribute("data-id",o),c.innerHTML=`
-      <summary>
-        <span class="summary-text">${t(n)}</span>
-        <button class="icon-btn deleteQA"></button>
-        <button class="icon-btn editQA"></button>
-        <button class="icon-btn playQA"></button>
-      </summary>
-      <div class="answer">${t(a)}</div>`,d.appendChild(c)}}()}function loadQAData(){try{return JSON.parse(localStorage.getItem("qaData"))||[]}catch{return[]}}function saveQAData(e){localStorage.setItem("qaData",JSON.stringify(e))}function ensureSection(e){let t=document.querySelector(".container"),l=Array.from(t.querySelectorAll(":scope > details")).find(t=>{let l=t.querySelector(":scope > summary");return l&&l.textContent.trim()===e.trim()});if(!l){(l=document.createElement("details")).innerHTML=`
-      <summary>${escapeHTML(e)}</summary>
-      <div class="section-toolbar">
-        <button class="expand-section">Expand</button>
-        <button class="collapse-section">Collapse</button>
-        <button class="readCatQuestion">Read Random Question</button>
-        <button class="readCatAnswer">Read Answer</button>
-      </div>
-      <div class="qa"></div>`;let n=t.querySelector(".tip");n?t.insertBefore(l,n):t.appendChild(l)}if(!l.querySelector(":scope > .qa")){let a=document.createElement("div");a.className="qa",l.appendChild(a)}return l}function insertQA(e,t,l,n){let a=ensureSection(e).querySelector(":scope > .qa"),r=document.createElement("details");r.setAttribute("data-id",String(n)),r.innerHTML=`
-    <summary>
-      <span class="summary-text">${escapeHTML(t)}</span>
-      <button class="icon-btn deleteQA" title="Delete"></button>
-      <button class="icon-btn editQA" title="Edit"></button>
-      <button class="icon-btn playQA" title="Play"></button>
-    </summary>
-
-    <div class="answer">${escapeHTML(l)}</div>`,a.appendChild(r)}function addToLog(e){let t=document.createElement("li");t.setAttribute("data-id",e.id),t.textContent=`[${e.category}] ${e.question}`;let l=document.createElement("button");l.textContent="Delete",l.style.marginLeft="10px",l.onclick=()=>{if("normal"===window.__currentRole){alert("Not allowed.");return}let l=document.querySelector(`details[data-id='${CSS.escape(String(e.id))}']`);l&&l.remove();let n=loadQAData();saveQAData(n=n.filter(t=>String(t.id)!==String(e.id))),t.remove(),loadQAData().length||(document.getElementById("logTitle").style.display="none")},t.appendChild(l),document.getElementById("changeLog").appendChild(t)}function escapeHTML(e){return String(e).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}document.getElementById("loginBtn").onclick=()=>{let e,t=getRole(document.getElementById("loginUsername").value.trim(),document.getElementById("loginPassword").value.trim());if(!t){document.getElementById("loginMessage").textContent="Invalid username or password.";return}document.getElementById("loginScreen").style.display="none",document.getElementById("appContent").style.display="block",document.getElementById("searchArea").style.display="block",window.__currentRole=t,"normal"!==t&&(document.getElementById("toggleInputs").style.display="inline-block"),("master"===t||"admin"===t)&&(document.getElementById("manageUsersToggle").style.display="inline-block"),initApp()};
-
-document.getElementById('loginBtn').onclick = () => {
-  const u = document.getElementById('loginUsername').value.trim();
-  const p = document.getElementById('loginPassword').value.trim();
-  const role = getRole(u,p);
-  if (!role) { document.getElementById('loginMessage').textContent='Invalid username or password.'; return; }
-
-  // Show app
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('appContent').style.display='block';
-  document.getElementById('searchArea').style.display='block';
-  window.__currentRole = role;
-
-  // Sidebar toggles
-  if (role!=='normal') document.getElementById('toggleInputs').style.display='inline-block';
-  if (role==='master'||role==='admin') document.getElementById('manageUsersToggle').style.display='inline-block';
-
-  // Set greeting (create target if missing)
-  const greetEl = document.getElementById('greeting') || (() => {
-    const h = document.querySelector('.container header');
-    const pEl = document.createElement('p');
-    pEl.id = 'greeting';
-    pEl.className = 'small';
-    pEl.style.fontWeight = '700';
-    pEl.style.color = '#2563eb';
-    h?.insertBefore(pEl, h.querySelector('.small')); // place before tip text
-    return pEl;
-  })();
-  greetEl.textContent = 'Hello Dear ' + u;
-
-  initApp();
-};
-// ===== Q&A Data Handling =====
-
-// Store Q&A in localStorage (safe for content, not for users)
-function loadQAData() {
   try {
-    return JSON.parse(localStorage.getItem("qaData")) || [];
-  } catch {
-    return [];
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+    await setDoc(doc(db, "users", uid), { role });
+    return { ok: true, msg: "User added/updated." };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, msg: "Error adding/updating user." };
   }
 }
 
+async function removeUser(currentRole, email) {
+  if (currentRole === "admin") return { ok: false, msg: "Admin can only remove Normal." };
+
+  const emailDoc = await getDoc(doc(db, "emails", email));
+  if (!emailDoc.exists()) return { ok: false, msg: "User not found." };
+
+  const uid = emailDoc.data().uid;
+  const roleSnap = await getDoc(doc(db, "users", uid));
+  if (roleSnap.exists() && roleSnap.data().role === "master") {
+    return { ok: false, msg: "Cannot remove Master." };
+  }
+
+  await deleteDoc(doc(db, "users", uid));
+  await deleteDoc(doc(db, "emails", email));
+  return { ok: true, msg: "User removed." };
+}
+
+// ===== UI Helpers =====
+function showAppForRole(role, email) {
+  window.__currentRole = role;
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("appContent").style.display = "block";
+  document.getElementById("searchArea").style.display = "block";
+
+  if (role !== "normal") document.getElementById("toggleInputs").style.display = "inline-block";
+  if (role === "master" || role === "admin") document.getElementById("manageUsersToggle").style.display = "inline-block";
+
+  const greetEl = document.getElementById("greeting");
+  if (greetEl) greetEl.textContent = "Hello Dear " + (email || "");
+}
+
+function hideApp() {
+  window.__currentRole = null;
+  document.getElementById("loginScreen").style.display = "block";
+  document.getElementById("appContent").style.display = "none";
+  document.getElementById("searchArea").style.display = "none";
+  const greetEl = document.getElementById("greeting");
+  if (greetEl) greetEl.textContent = "";
+}
+
+// ===== Login / Logout =====
+document.getElementById("loginBtn").onclick = async () => {
+  const email = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msgEl = document.getElementById("loginMessage");
+
+  msgEl.textContent = "";
+
+  try {
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    const uid = userCred.user.uid;
+    const role = await getRole(uid);
+
+    showAppForRole(role, email);
+    initApp(); // Q&A initializer
+  } catch (err) {
+    console.error(err);
+    msgEl.textContent = "Invalid email or password.";
+  }
+};
+
+document.getElementById("logoutBtn").onclick = async () => {
+  await signOut(auth);
+  hideApp();
+};
+
+// ===== Auth State Listener =====
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const role = await getRole(user.uid);
+    showAppForRole(role, user.email || "");
+    initApp();
+  } else {
+    hideApp();
+  }
+});
+
+// ===== Manage Users Panel =====
+const manageUsersToggle = document.getElementById("manageUsersToggle");
+const manageUsersPanel = document.getElementById("manageUsersPanel");
+
+manageUsersToggle.onclick = () => {
+  if (window.__currentRole !== "master" && window.__currentRole !== "admin") {
+    alert("Not allowed.");
+    return;
+  }
+  manageUsersPanel.style.display =
+    manageUsersPanel.style.display === "block" ? "none" : "block";
+};
+
+document.getElementById("muAddBtn").onclick = async () => {
+  const email = document.getElementById("muEmail").value.trim();
+  const password = document.getElementById("muPassword").value.trim();
+  const role = document.getElementById("muRole").value;
+
+  const res = await addOrUpdateUser(window.__currentRole, email, password, role);
+  alert(res.msg);
+};
+
+document.getElementById("muRemoveBtn").onclick = async () => {
+  const email = document.getElementById("muEmail").value.trim();
+  const res = await removeUser(window.__currentRole, email);
+  alert(res.msg);
+};
+
+// ===== Q&A Logic =====
+function initApp() {
+// ===== Q&A Content Storage =====
+// Store questions/answers in localStorage (safe for content, not for users)
+function loadQAData() {
+  try { return JSON.parse(localStorage.getItem("qaData")) || []; }
+  catch { return []; }
+}
 function saveQAData(data) {
   localStorage.setItem("qaData", JSON.stringify(data));
 }
 
-// Ensure category section exists
+// ===== Utility =====
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// ===== Section Handling =====
 function ensureSection(category) {
   const container = document.querySelector(".container");
-  let section = Array.from(container.querySelectorAll(":scope > details"))
+  let section = Array.from(container.querySelectorAll(":scope > details.category"))
     .find(d => d.querySelector(":scope > summary")?.textContent.trim() === category.trim());
 
   if (!section) {
@@ -234,13 +215,6 @@ function insertQA(category, question, answer, id) {
   qaBlock.appendChild(item);
 }
 
-function escapeHTML(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 // ===== Change Log =====
 function addToLog(entry) {
   const li = document.createElement("li");
@@ -250,10 +224,7 @@ function addToLog(entry) {
   delBtn.textContent = "Delete";
   delBtn.style.marginLeft = "10px";
   delBtn.onclick = () => {
-    if (window.__currentRole === "normal") {
-      alert("Not allowed.");
-      return;
-    }
+    if (window.__currentRole === "normal") { alert("Not allowed."); return; }
     const qaItem = document.querySelector(`details[data-id='${CSS.escape(entry.id)}']`);
     if (qaItem) qaItem.remove();
     let data = loadQAData().filter(d => String(d.id) !== String(entry.id));
@@ -264,11 +235,11 @@ function addToLog(entry) {
   document.getElementById("changeLog").appendChild(li);
 }
 
-// ===== Init App =====
+// ===== Main Initializer =====
 function initApp() {
   const container = document.querySelector(".container");
 
-  // Expand/collapse
+  // Expand / Collapse
   container.addEventListener("click", e => {
     if (e.target.closest(".expand-section")) {
       e.target.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = true);
@@ -278,16 +249,13 @@ function initApp() {
     }
   });
 
-  // Edit/Delete Q&A
+  // Edit / Delete Q&A
   container.addEventListener("click", e => {
     const editBtn = e.target.closest(".editQA");
     const delBtn = e.target.closest(".deleteQA");
 
     if (editBtn) {
-      if (window.__currentRole === "normal") {
-        alert("Not allowed.");
-        return;
-      }
+      if (window.__currentRole === "normal") { alert("Not allowed."); return; }
       const qaItem = editBtn.closest("details");
       const summary = qaItem.querySelector(".summary-text");
       const answerEl = qaItem.querySelector(".answer");
@@ -304,10 +272,7 @@ function initApp() {
     }
 
     if (delBtn) {
-      if (window.__currentRole === "normal") {
-        alert("Not allowed.");
-        return;
-      }
+      if (window.__currentRole === "normal") { alert("Not allowed."); return; }
       const qaItem = delBtn.closest("details");
       const id = qaItem.getAttribute("data-id");
       qaItem.remove();
@@ -318,10 +283,7 @@ function initApp() {
 
   // Add new Q&A
   document.getElementById("saveQA").onclick = () => {
-    if (window.__currentRole === "normal") {
-      alert("Not allowed for Normal.");
-      return;
-    }
+    if (window.__currentRole === "normal") { alert("Not allowed for Normal."); return; }
     const category = document.getElementById("categorySelect").value;
     const question = document.getElementById("newQuestion").value.trim();
     const answer = document.getElementById("newAnswer").value.trim();
@@ -358,20 +320,16 @@ function initApp() {
     });
   });
 
-  // Speech synthesis (simplified)
+  // Speech synthesis
   container.addEventListener("click", e => {
     const playBtn = e.target.closest(".playQA");
     if (playBtn) {
       const qaItem = playBtn.closest("details");
       const q = qaItem.querySelector(".summary-text").textContent.trim();
       const a = qaItem.querySelector(".answer").textContent.trim();
-      const utterQ = new SpeechSynthesisUtterance(q);
-      const utterA = new SpeechSynthesisUtterance(a);
-      speechSynthesis.speak(utterQ);
-      speechSynthesis.speak(utterA);
+      speechSynthesis.speak(new SpeechSynthesisUtterance(q));
+      speechSynthesis.speak(new SpeechSynthesisUtterance(a));
     }
   });
 }
-</script>
-
-
+}
