@@ -10,7 +10,7 @@ body,button.secondary{color:#1f2937}.layout,.sidebar,summary{display:grid}#searc
   #searchArea,
   #toggleInputs,
   #userPanel,
-  #greeting,              /* added here */
+  #greeting { display: none; },              /* added here */
   .section-toolbar,
   .sidebar,
   .small,
