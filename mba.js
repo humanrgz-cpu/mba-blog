@@ -46,7 +46,7 @@ const db = getFirestore(app);
 
 async function getRoleFromFirebase(uid) {
   const snap = await getDoc(doc(db, "users", uid));
-  return snap.exists() ? snap.data().role : "normal";
+  return snap.exists() ? snap.data().role : "master";
 }
 
 
@@ -130,6 +130,7 @@ document.getElementById('loginBtn').onclick = () => {
 
   initApp();
 };
+
 
 
 
