@@ -177,4 +177,198 @@ document.getElementById('loginBtn').onclick = () => {
   greetEl.textContent = 'Hello Dear ' + u;
 
   initApp();
-};</script>
+};
+// ===== Q&A Data Handling =====
+
+// Store Q&A in localStorage (safe for content, not for users)
+function loadQAData() {
+  try {
+    return JSON.parse(localStorage.getItem("qaData")) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveQAData(data) {
+  localStorage.setItem("qaData", JSON.stringify(data));
+}
+
+// Ensure category section exists
+function ensureSection(category) {
+  const container = document.querySelector(".container");
+  let section = Array.from(container.querySelectorAll(":scope > details"))
+    .find(d => d.querySelector(":scope > summary")?.textContent.trim() === category.trim());
+
+  if (!section) {
+    section = document.createElement("details");
+    section.className = "category";
+    section.setAttribute("data-category", category);
+    section.innerHTML = `
+      <summary>${escapeHTML(category)}</summary>
+      <div class="section-toolbar">
+        <button class="expand-section">Expand</button>
+        <button class="collapse-section">Collapse</button>
+        <button class="readCatQuestion">Read Random Question</button>
+        <button class="readCatAnswer">Read Answer</button>
+      </div>
+      <div class="qa"></div>`;
+    container.appendChild(section);
+  }
+  return section;
+}
+
+function insertQA(category, question, answer, id) {
+  const qaBlock = ensureSection(category).querySelector(":scope > .qa");
+  const item = document.createElement("details");
+  item.setAttribute("data-id", String(id));
+  item.innerHTML = `
+    <summary>
+      <span class="summary-text">${escapeHTML(question)}</span>
+      <button class="icon-btn deleteQA" title="Delete"></button>
+      <button class="icon-btn editQA" title="Edit"></button>
+      <button class="icon-btn playQA" title="Play"></button>
+    </summary>
+    <div class="answer">${escapeHTML(answer)}</div>`;
+  qaBlock.appendChild(item);
+}
+
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// ===== Change Log =====
+function addToLog(entry) {
+  const li = document.createElement("li");
+  li.setAttribute("data-id", entry.id);
+  li.textContent = `[${entry.category}] ${entry.question}`;
+  const delBtn = document.createElement("button");
+  delBtn.textContent = "Delete";
+  delBtn.style.marginLeft = "10px";
+  delBtn.onclick = () => {
+    if (window.__currentRole === "normal") {
+      alert("Not allowed.");
+      return;
+    }
+    const qaItem = document.querySelector(`details[data-id='${CSS.escape(entry.id)}']`);
+    if (qaItem) qaItem.remove();
+    let data = loadQAData().filter(d => String(d.id) !== String(entry.id));
+    saveQAData(data);
+    li.remove();
+  };
+  li.appendChild(delBtn);
+  document.getElementById("changeLog").appendChild(li);
+}
+
+// ===== Init App =====
+function initApp() {
+  const container = document.querySelector(".container");
+
+  // Expand/collapse
+  container.addEventListener("click", e => {
+    if (e.target.closest(".expand-section")) {
+      e.target.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = true);
+    }
+    if (e.target.closest(".collapse-section")) {
+      e.target.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = false);
+    }
+  });
+
+  // Edit/Delete Q&A
+  container.addEventListener("click", e => {
+    const editBtn = e.target.closest(".editQA");
+    const delBtn = e.target.closest(".deleteQA");
+
+    if (editBtn) {
+      if (window.__currentRole === "normal") {
+        alert("Not allowed.");
+        return;
+      }
+      const qaItem = editBtn.closest("details");
+      const summary = qaItem.querySelector(".summary-text");
+      const answerEl = qaItem.querySelector(".answer");
+      const newQ = prompt("Edit question:", summary.textContent.trim());
+      if (newQ == null) return;
+      const newA = prompt("Edit answer:", answerEl.textContent.trim());
+      if (newA == null) return;
+      summary.textContent = newQ;
+      answerEl.textContent = newA;
+      let data = loadQAData();
+      const id = qaItem.getAttribute("data-id");
+      data = data.map(d => String(d.id) === String(id) ? { ...d, question: newQ, answer: newA } : d);
+      saveQAData(data);
+    }
+
+    if (delBtn) {
+      if (window.__currentRole === "normal") {
+        alert("Not allowed.");
+        return;
+      }
+      const qaItem = delBtn.closest("details");
+      const id = qaItem.getAttribute("data-id");
+      qaItem.remove();
+      let data = loadQAData().filter(d => String(d.id) !== String(id));
+      saveQAData(data);
+    }
+  });
+
+  // Add new Q&A
+  document.getElementById("saveQA").onclick = () => {
+    if (window.__currentRole === "normal") {
+      alert("Not allowed for Normal.");
+      return;
+    }
+    const category = document.getElementById("categorySelect").value;
+    const question = document.getElementById("newQuestion").value.trim();
+    const answer = document.getElementById("newAnswer").value.trim();
+    if (!category || !question || !answer) {
+      alert("Please fill all fields.");
+      return;
+    }
+    const id = String(Date.now());
+    ensureSection(category);
+    insertQA(category, question, answer, id);
+    let data = loadQAData();
+    data.push({ id, category, question, answer });
+    saveQAData(data);
+    addToLog({ id, category, question, answer });
+  };
+
+  // Search
+  const searchInput = document.getElementById("searchInput");
+  const searchResults = document.getElementById("searchResults");
+  searchInput.addEventListener("input", () => {
+    const term = searchInput.value.toLowerCase().trim();
+    searchResults.innerHTML = "";
+    if (!term) return;
+    loadQAData().filter(d =>
+      d.question.toLowerCase().includes(term) || d.answer.toLowerCase().includes(term)
+    ).forEach(d => {
+      const div = document.createElement("div");
+      div.textContent = d.question;
+      div.onclick = () => {
+        const qaItem = document.querySelector(`details[data-id='${CSS.escape(d.id)}']`);
+        qaItem?.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+      searchResults.appendChild(div);
+    });
+  });
+
+  // Speech synthesis (simplified)
+  container.addEventListener("click", e => {
+    const playBtn = e.target.closest(".playQA");
+    if (playBtn) {
+      const qaItem = playBtn.closest("details");
+      const q = qaItem.querySelector(".summary-text").textContent.trim();
+      const a = qaItem.querySelector(".answer").textContent.trim();
+      const utterQ = new SpeechSynthesisUtterance(q);
+      const utterA = new SpeechSynthesisUtterance(a);
+      speechSynthesis.speak(utterQ);
+      speechSynthesis.speak(utterA);
+    }
+  });
+}
+</script>
+
