@@ -17,10 +17,12 @@ import {
 
 // 🔧 Replace with your Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyA1m80OnKDqLHrOyIMD3at1CblFfvh64X8",
+  authDomain: "mba-qa-46f51.firebaseapp.com",
+  projectId: "mba-qa-46f51",
+  storageBucket: "mba-qa-46f51.firebasestorage.app",
+  messagingSenderId: "554345717376",
+  appId: "1:554345717376:web:907bb2ae83e891a36ed065"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -333,3 +335,4 @@ function initApp() {
   });
 }
 }
+
