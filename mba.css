@@ -89,7 +89,7 @@ body,button.secondary{color:#1f2937}.layout,.sidebar,summary{display:grid}#searc
   summary {
     display: block;
     font-weight: 700;
-    margin: 8px 200px;
+    margin: 8px 250px;
   }
 
   .qa {
