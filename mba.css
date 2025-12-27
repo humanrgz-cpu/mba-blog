@@ -18,7 +18,6 @@ body,button.secondary{color:#1f2937}.layout,.sidebar,summary{display:grid}#searc
   /* Ensure greeting is hidden even if styles cascade strangely */
   #greeting {
     display: none !important;
-    visibility: hidden !important;
   }
 
   /* General UI chrome off */
