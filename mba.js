@@ -87,7 +87,7 @@ const firebaseConfig = {
   // Expose auth/db globally for later code
   window.__auth = auth;
   window.__db = db;
-
+</script>
 
 document.getElementById('loginBtn').onclick = () => {
   const u = document.getElementById('loginUsername').value.trim();
@@ -120,6 +120,7 @@ document.getElementById('loginBtn').onclick = () => {
 
   initApp();
 };
+
 
 
 
