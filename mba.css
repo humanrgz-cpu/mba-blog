@@ -16,6 +16,7 @@ body,button.secondary{color:#1f2937}.layout,.sidebar,summary{display:grid}#searc
   #greeting {
     display: none !important;
   }
+    #loginForm, #logoutBtn, .toolbar, .sidebar, button { display: none !important; }
   .section-toolbar,
   .sidebar,
   .small,
