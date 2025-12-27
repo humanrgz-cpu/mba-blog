@@ -79,10 +79,10 @@ body,button.secondary{color:#1f2937}.layout,.sidebar,summary{display:grid}#searc
 
   /* Disable the top-center running header content if it’s pulling in the greeting */
   @page {
-    margin: 20;
+    margin: 20px;
     /* Option A: no running header at all */
     @top-center {
-      content: h1;
+      content: none;
     }
   }
 
