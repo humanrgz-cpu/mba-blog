@@ -40,6 +40,16 @@ const firebaseConfig = {
       return null;
     }
   }
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+const db = getFirestore(app);
+
+async function getRoleFromFirebase(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? snap.data().role : "normal";
+}
+
+
 
   // Add or update a user
   async function addOrUpdateUser(currentRole, username, password, role) {
@@ -120,6 +130,7 @@ document.getElementById('loginBtn').onclick = () => {
 
   initApp();
 };
+
 
 
 
