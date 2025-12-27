@@ -1,4 +1,4 @@
-// ===== Firebase Setup =====
+// ===== Firebase setup (ES modules) =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
 import {
   getAuth,
@@ -30,7 +30,7 @@ const db = getFirestore(app);
 
 window.__currentRole = null;
 
-// ===== Role Helpers =====
+// ===== Role helpers (Firestore) =====
 async function getRole(uid) {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? snap.data().role : "normal";
@@ -40,7 +40,6 @@ async function addOrUpdateUser(currentRole, email, password, role) {
   if (currentRole === "normal") return { ok: false, msg: "Not allowed." };
   if (currentRole === "admin" && role !== "normal") return { ok: false, msg: "Admin can only add/update Normal." };
   if (role === "master" && currentRole !== "master") return { ok: false, msg: "Only Master can create Master." };
-
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
@@ -55,54 +54,99 @@ async function addOrUpdateUser(currentRole, email, password, role) {
 
 async function removeUser(currentRole, email) {
   if (currentRole === "admin") return { ok: false, msg: "Admin can only remove Normal." };
-
   const emailDoc = await getDoc(doc(db, "emails", email));
   if (!emailDoc.exists()) return { ok: false, msg: "User not found." };
-
   const uid = emailDoc.data().uid;
   const roleSnap = await getDoc(doc(db, "users", uid));
-  if (roleSnap.exists() && roleSnap.data().role === "master") {
-    return { ok: false, msg: "Cannot remove Master." };
-  }
-
+  if (roleSnap.exists() && roleSnap.data().role === "master") return { ok: false, msg: "Cannot remove Master." };
   await deleteDoc(doc(db, "users", uid));
   await deleteDoc(doc(db, "emails", email));
   return { ok: true, msg: "User removed." };
 }
 
-// ===== UI Helpers =====
+// ===== UI helpers (match your HTML) =====
 function showAppForRole(role, email) {
   window.__currentRole = role;
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("appContent").style.display = "block";
-  document.getElementById("searchArea").style.display = "block";
-  document.getElementById("logoutBtn").style.display = "inline-block";
+  const loginScreen = document.getElementById("loginScreen");
+  const appContent = document.getElementById("appContent");
+  const searchArea = document.getElementById("searchArea");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const greeting = document.querySelector("#greeting"); // first occurrence only
 
-  const greetEl = document.getElementById("greeting");
-  if (greetEl) greetEl.textContent = "Hello Dear " + (email || "");
+  if (loginScreen) loginScreen.style.display = "none";
+  if (appContent) appContent.style.display = "block";
+  if (searchArea) searchArea.style.display = "block";
+  if (logoutBtn) logoutBtn.style.display = "inline-block";
+  if (greeting) greeting.textContent = "Hello Dear " + (email || "");
 }
 
 function hideApp() {
   window.__currentRole = null;
-  document.getElementById("loginScreen").style.display = "inline-flex";
-  document.getElementById("appContent").style.display = "none";
-  document.getElementById("searchArea").style.display = "none";
-  document.getElementById("logoutBtn").style.display = "none";
-  const greetEl = document.getElementById("greeting");
-  if (greetEl) greetEl.textContent = "";
+  const loginScreen = document.getElementById("loginScreen");
+  const appContent = document.getElementById("appContent");
+  const searchArea = document.getElementById("searchArea");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const greeting = document.querySelector("#greeting");
+
+  if (loginScreen) loginScreen.style.display = "inline-flex";
+  if (appContent) appContent.style.display = "none";
+  if (searchArea) searchArea.style.display = "none";
+  if (logoutBtn) logoutBtn.style.display = "none";
+  if (greeting) greeting.textContent = "";
 }
 
-// ===== Q&A Helpers =====
+// ===== Q&A content storage (localStorage) =====
 function loadQAData() {
   try { return JSON.parse(localStorage.getItem("qaData")) || []; }
   catch { return []; }
 }
-function saveQAData(data) {
-  localStorage.setItem("qaData", JSON.stringify(data));
+function saveQAData(data) { localStorage.setItem("qaData", JSON.stringify(data)); }
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+// Ensure a section exists (matches your plain <details> layout)
+function ensureSection(category) {
+  const container = document.querySelector(".container");
+  if (!container) return null;
+  let section = Array.from(container.querySelectorAll(":scope > details"))
+    .find(d => (d.querySelector(":scope > summary")?.textContent.trim() || "") === category.trim());
+  if (!section) {
+    section = document.createElement("details");
+    section.innerHTML = `
+      <summary>${esc(category)}</summary>
+      <div class="section-toolbar">
+        <button class="expand-section">Expand</button>
+        <button class="collapse-section">Collapse</button>
+        <button class="readCatQuestion">Read Random Question</button>
+        <button class="readCatAnswer">Read Answer</button>
+      </div>
+      <div class="qa"></div>`;
+    container.appendChild(section);
+  }
+  if (!section.querySelector(":scope > .qa")) {
+    const qa = document.createElement("div");
+    qa.className = "qa";
+    section.appendChild(qa);
+  }
+  return section;
 }
-function escapeHTML(str) {
-  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function insertQA(category, question, answer, id) {
+  const sec = ensureSection(category);
+  if (!sec) return;
+  const qa = sec.querySelector(":scope > .qa");
+  const item = document.createElement("details");
+  item.setAttribute("data-id", String(id));
+  item.innerHTML = `
+    <summary>
+      <span class="summary-text">${esc(question)}</span>
+      <button class="icon-btn deleteQA"></button>
+      <button class="icon-btn editQA"></button>
+      <button class="icon-btn playQA"></button>
+    </summary>
+    <div class="answer">${esc(answer)}</div>`;
+  qa.appendChild(item);
 }
+
 function addToLog(entry) {
   const list = document.getElementById("changeLog");
   if (!list) return;
@@ -112,7 +156,7 @@ function addToLog(entry) {
   list.appendChild(li);
 }
 
-// ===== Main Initializer =====
+// ===== Main initializer (bind once) =====
 let __qaBound = false;
 function initApp() {
   if (__qaBound) return;
@@ -121,17 +165,37 @@ function initApp() {
   const container = document.querySelector(".container");
   if (!container) return;
 
-  // Expand/Collapse
+  // Section controls
   container.addEventListener("click", e => {
-    if (e.target.closest(".expand-section")) {
-      e.target.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = true);
+    const expandBtn = e.target.closest(".expand-section");
+    const collapseBtn = e.target.closest(".collapse-section");
+    const readQBtn = e.target.closest(".readCatQuestion");
+    const readABtn = e.target.closest(".readCatAnswer");
+
+    if (expandBtn) {
+      expandBtn.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = true);
     }
-    if (e.target.closest(".collapse-section")) {
-      e.target.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = false);
+    if (collapseBtn) {
+      collapseBtn.closest("details")?.querySelectorAll(".qa > details").forEach(d => d.open = false);
+    }
+    if (readQBtn) {
+      const sec = readQBtn.closest("details");
+      const summaries = Array.from(sec?.querySelectorAll(".qa > details > summary") || []);
+      if (!summaries.length) { alert("No questions in this category."); return; }
+      const s = summaries[Math.floor(Math.random()*summaries.length)];
+      const q = s.querySelector(".summary-text")?.textContent.trim() || s.textContent.trim();
+      speechSynthesis.speak(new SpeechSynthesisUtterance(q));
+      sec.dataset.lastId = s.parentElement.getAttribute("data-id") || "";
+    }
+    if (readABtn) {
+      const sec = readABtn.closest("details");
+      const lastId = sec?.dataset?.lastId || "";
+      const a = (lastId ? sec.querySelector(`details[data-id='${lastId}']`) : null)?.querySelector(".answer")?.textContent.trim() || "No answer found.";
+      speechSynthesis.speak(new SpeechSynthesisUtterance(a));
     }
   });
 
-  // Edit/Delete/Play
+  // Item controls: edit/delete/play
   container.addEventListener("click", e => {
     const editBtn = e.target.closest(".editQA");
     const delBtn = e.target.closest(".deleteQA");
@@ -142,14 +206,11 @@ function initApp() {
       const item = editBtn.closest("details");
       const qEl = item.querySelector(".summary-text");
       const aEl = item.querySelector(".answer");
-      const newQ = prompt("Edit question:", qEl.textContent.trim());
-      if (newQ == null) return;
-      const newA = prompt("Edit answer:", aEl.textContent.trim());
-      if (newA == null) return;
-      qEl.textContent = newQ;
-      aEl.textContent = newA;
+      const q1 = prompt("Edit question:", qEl.textContent.trim()); if (q1 == null) return;
+      const a1 = prompt("Edit answer:", aEl.textContent.trim()); if (a1 == null) return;
+      qEl.textContent = q1; aEl.textContent = a1;
       const id = item.getAttribute("data-id");
-      saveQAData(loadQAData().map(d => String(d.id) === String(id) ? { ...d, question:newQ, answer:newA } : d));
+      saveQAData(loadQAData().map(d => String(d.id) === String(id) ? { ...d, question:q1, answer:a1 } : d));
     }
 
     if (delBtn) {
@@ -158,16 +219,89 @@ function initApp() {
       const id = item.getAttribute("data-id");
       item.remove();
       saveQAData(loadQAData().filter(d => String(d.id) !== String(id)));
+      const logEntry = document.querySelector(`#changeLog li[data-id='${CSS.escape(String(id))}']`);
+      if (logEntry) logEntry.remove();
     }
 
     if (playBtn) {
       const item = playBtn.closest("details");
-      const q = item.querySelector(".summary-text").textContent.trim();
-      const a = item.querySelector(".answer").textContent.trim();
+      const q = item.querySelector(".summary-text")?.textContent.trim() || "";
+      const a = item.querySelector(".answer")?.textContent.trim() || "";
       speechSynthesis.speak(new SpeechSynthesisUtterance(q));
       speechSynthesis.speak(new SpeechSynthesisUtterance(a));
     }
   });
+
+  // Toggle Add Q&A panel (uses your sidebar button and panel)
+  const toggleInputs = document.getElementById("toggleInputs");
+  // Prefer sidebar userPanel (the one with form and Excel)
+  const userPanels = Array.from(document.querySelectorAll("#userPanel"));
+  const userPanel = userPanels[userPanels.length - 1] || null;
+  if (toggleInputs && userPanel) {
+    toggleInputs.onclick = () => {
+      if (window.__currentRole === "normal") { alert("Not allowed."); return; }
+      const visible = userPanel.style.display === "block";
+      userPanel.style.display = visible ? "none" : "block";
+      toggleInputs.textContent = visible ? "Add New Q&A" : "Hide Q&A Form";
+    };
+  }
+
+  // Manage Users toggle (IDs in your sidebar)
+  const manageUsersToggle = document.getElementById("manageUsersToggle");
+  const manageUsersPanel = document.getElementById("manageUsersPanel");
+  if (manageUsersToggle && manageUsersPanel) {
+    manageUsersToggle.onclick = () => {
+      if (window.__currentRole !== "master" && window.__currentRole !== "admin") { alert("Not allowed."); return; }
+      manageUsersPanel.style.display = manageUsersPanel.style.display === "block" ? "none" : "block";
+    };
+  }
+
+  // Save new Q&A (matches your IDs)
+  const saveBtn = document.getElementById("saveQA");
+  const catSel = document.getElementById("categorySelect");
+  const newQ = document.getElementById("newQuestion");
+  const newA = document.getElementById("newAnswer");
+  if (saveBtn && catSel && newQ && newA) {
+    saveBtn.onclick = () => {
+      if (window.__currentRole === "normal") { alert("Not allowed."); return; }
+      const category = catSel.value.trim();
+      const question = newQ.value.trim();
+      const answer = newA.value.trim();
+      if (!category || !question || !answer) { alert("Please fill all fields."); return; }
+      const id = String(Date.now());
+      insertQA(category, question, answer, id);
+      const data = loadQAData(); data.push({ id, category, question, answer }); saveQAData(data);
+      addToLog({ id, category, question, answer });
+      newQ.value = ""; newA.value = "";
+    };
+  }
+
+  // Excel import (your IDs)
+  const excelInput = document.getElementById("excelFile");
+  const importBtn = document.getElementById("importExcel");
+  if (excelInput && importBtn) {
+    importBtn.onclick = async () => {
+      if (window.__currentRole === "normal") { alert("Not allowed."); return; }
+      const file = excelInput.files?.[0];
+      if (!file) { alert("Choose an Excel file first."); return; }
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const firstSheet = wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 });
+      // Expect columns: Category | Question | Answer
+      const out = loadQAData();
+      rows.slice(1).forEach(r => {
+        const [category, question, answer] = r;
+        if (!category || !question || !answer) return;
+        const id = String(Date.now() + Math.random());
+        insertQA(String(category), String(question), String(answer), id);
+        out.push({ id, category: String(category), question: String(question), answer: String(answer) });
+        addToLog({ id, category: String(category), question: String(question), answer: String(answer) });
+      });
+      saveQAData(out);
+      alert("Import completed.");
+    };
+  }
 
   // Search
   const searchInput = document.getElementById("searchInput");
@@ -177,14 +311,18 @@ function initApp() {
       const term = searchInput.value.toLowerCase().trim();
       searchResults.innerHTML = "";
       if (!term) return;
-      loadQAData().filter(d =>
-        d.question.toLowerCase().includes(term) || d.answer.toLowerCase().includes(term)
-      ).forEach(d => {
+      const matches = loadQAData().filter(d =>
+        d.question.toLowerCase().includes(term) || d.answer.toLowerCase().includes(term) || d.category.toLowerCase().includes(term)
+      );
+      matches.forEach(d => {
         const div = document.createElement("div");
-        div.textContent = d.question;
+        div.textContent = `${d.category} — ${d.question}`;
         div.onclick = () => {
-          const qaItem = document.querySelector(`details[data-id='${CSS.escape(d.id)}']`);
-          qaItem?.scrollIntoView({ behavior:"smooth", block:"center" });
+          const el = document.querySelector(`details[data-id='${CSS.escape(d.id)}']`);
+          if (!el) return;
+          el.closest("details")?.open = true;
+          el.open = true;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
         };
         searchResults.appendChild(div);
       });
@@ -199,4 +337,75 @@ function initApp() {
         sec.open = true;
         sec.querySelectorAll(".qa > details").forEach(d => d.open = true);
       });
-     
+      setTimeout(() => window.print(), 150);
+    };
+  }
+
+  // Back to top
+  const backToTop = document.getElementById("backToTop");
+  if (backToTop) {
+    window.addEventListener("scroll", () => {
+      const y = document.documentElement.scrollTop || document.body.scrollTop;
+      backToTop.style.display = y > 200 ? "block" : "none";
+    });
+    backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }
+}
+
+// ===== Wiring: match your login form IDs =====
+document.addEventListener("DOMContentLoaded", () => {
+  const loginForm = document.getElementById("loginScreen");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email")?.value.trim() || "";
+      const password = document.getElementById("password")?.value.trim() || "";
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const role = await getRole(userCred.user.uid);
+        showAppForRole(role, email);
+        initApp();
+      } catch (err) {
+        console.error(err);
+        alert("Invalid email or password.");
+      }
+    });
+  }
+
+  if (logoutBtn) {
+    logoutBtn.onclick = async () => { await signOut(auth); hideApp(); };
+  }
+
+  // Manage Users panel (uses muUsername from your HTML)
+  const muAddBtn = document.getElementById("muAddBtn");
+  const muRemoveBtn = document.getElementById("muRemoveBtn");
+  if (muAddBtn) {
+    muAddBtn.onclick = async () => {
+      const email = document.getElementById("muUsername")?.value.trim() || "";
+      const password = document.getElementById("muPassword")?.value.trim() || "";
+      const role = document.getElementById("muRole")?.value || "normal";
+      const res = await addOrUpdateUser(window.__currentRole, email, password, role);
+      alert(res.msg);
+    };
+  }
+  if (muRemoveBtn) {
+    muRemoveBtn.onclick = async () => {
+      const email = document.getElementById("muUsername")?.value.trim() || "";
+      const res = await removeUser(window.__currentRole, email);
+      alert(res.msg);
+    };
+  }
+
+  // Auth state drives UI
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const role = await getRole(user.uid);
+      showAppForRole(role, user.email || "");
+      initApp();
+    } else {
+      hideApp();
+    }
+  });
+});
