@@ -159,6 +159,7 @@ document.getElementById("muRemoveBtn").onclick = async () => {
 };
 
 // ===== Q&A Logic =====
+function initApp() {
 
 // ===== Q&A Content Storage =====
 // Store questions/answers in localStorage (safe for content, not for users)
@@ -334,7 +335,6 @@ function initApp() {
     }
   });
 }
-function initApp() {
 }
 document.getElementById("loginBtn").onclick = async () => {
   const email = document.getElementById("loginUsername").value.trim();
@@ -367,3 +367,4 @@ onAuthStateChanged(auth, async (user) => {
     hideApp();
   }
 });
+
