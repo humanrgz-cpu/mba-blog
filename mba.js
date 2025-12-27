@@ -335,36 +335,6 @@ function initApp() {
     }
   });
 }
-}
-document.getElementById("loginBtn").onclick = async () => {
-  const email = document.getElementById("loginUsername").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
-  const msgEl = document.getElementById("loginMessage");
 
-  msgEl.textContent = "";
 
-  try {
-    const userCred = await signInWithEmailAndPassword(auth, email, password);
-    const uid = userCred.user.uid;
-    const role = await getRole(uid);
-
-    // 🔑 Switch UI
-    showAppForRole(role, email);
-
-    // 🔑 Initialize Q&A features
-    initApp();
-  } catch (err) {
-    console.error(err);
-    msgEl.textContent = "Invalid email or password.";
-  }
-};
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const role = await getRole(user.uid);
-    showAppForRole(role, user.email || "");
-    initApp(); // make sure Q&A binds
-  } else {
-    hideApp();
-  }
-});
 
