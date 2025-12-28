@@ -58,7 +58,7 @@ async function addOrUpdateUser(currentRole, email, password, role) {
 
 async function removeUser(currentRole, email) {
   if (currentRole === "admin") return { ok: false, msg: "Admin can only remove Normal." };
-  const emailDoc = await getDoc(doc(db, "emails", email));
+  mailDoc = await getDoc(doc(db, "emails", email));
   if (!emailDoc.exists()) return { ok: false, msg: "User not found." };
   const uid = emailDoc.data().uid;
   const roleSnap = await getDoc(doc(db, "users", uid));
@@ -105,7 +105,7 @@ function loadQAData() {
   catch { return []; }
 }
 function saveQAData(data) { localStorage.setItem("qaData", JSON.stringify(data)); }
-const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+sc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
 // ===== Section helpers & item rendering =====
 function ensureSection(category) {
@@ -163,7 +163,18 @@ function addToLog(entry) {
 // ===== Main initializer =====
 let __qaBound = false;
 function initApp() {
-  if (__qaBound) return;
+    if (__qaBound) return;
+  __qaBound = true;
+
+  console.log("initApp is running, binding controls…");
+
+  const container = document.querySelector(".container");
+  if (!container) {
+    console.warn("No .container found!");
+    return;
+  }
+
+
   __qaBound = true;
 
   const container = document.querySelector(".container");
@@ -171,7 +182,7 @@ function initApp() {
 
   // Section controls: expand/collapse/read Q&A
   container.addEventListener("click", e => {
-    const expandBtn = e.target.closest(".expand-section");
+    xpandBtn = e.target.closest(".expand-section");
     const collapseBtn = e.target.closest(".collapse-section");
     const readQBtn = e.target.closest(".readCatQuestion");
     const readABtn = e.target.closest(".readCatAnswer");
@@ -202,7 +213,7 @@ function initApp() {
 
   // Item controls: edit/delete/play
   container.addEventListener("click", e => {
-    const editBtn = e.target.closest(".editQA");
+    ditBtn = e.target.closest(".editQA");
     const delBtn = e.target.closest(".deleteQA");
     const playBtn = e.target.closest(".playQA");
 
@@ -284,7 +295,7 @@ function initApp() {
 
   // Excel import
 // Excel import
-const excelInput = document.getElementById("excelFile");
+xcelInput = document.getElementById("excelFile");
 const importBtn = document.getElementById("importExcel");
 if (excelInput && importBtn) {
   importBtn.onclick = async () => {
@@ -339,7 +350,7 @@ if (excelInput && importBtn) {
         const div = document.createElement("div");
         div.textContent = `${d.category} — ${d.question}`;
         div.onclick = () => {
-          const el = document.querySelector(`details[data-id="${d.id}"]`);
+          l = document.querySelector(`details[data-id="${d.id}"]`);
           if (!el) return;
 const parentDetails = el.closest("details");
 if (parentDetails) {
@@ -379,7 +390,7 @@ if (parentDetails) {
   const muRemoveBtn = document.getElementById("muRemoveBtn");
   if (muAddBtn) {
     muAddBtn.onclick = async () => {
-      const email = document.getElementById("muUsername")?.value.trim() || "";
+      mail = document.getElementById("muUsername")?.value.trim() || "";
       const password = document.getElementById("muPassword")?.value.trim() || "";
       const role = document.getElementById("muRole")?.value || "normal";
       const res = await addOrUpdateUser(window.__currentRole, email, password, role);
@@ -434,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
