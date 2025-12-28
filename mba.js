@@ -421,9 +421,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+      e.preventDefault(); // 🔑 stops the page refresh
+
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
+
       try {
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const role = await getRole(userCred.user.uid);
@@ -443,7 +445,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Keep your onAuthStateChanged listener here too:
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       const role = await getRole(user.uid);
@@ -454,5 +455,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
