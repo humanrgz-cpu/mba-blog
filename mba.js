@@ -410,10 +410,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const role = await getRole(userCred.user.uid);
         showAppForRole(role, email);
         initApp();
-      } catch (err) {
-        console.error(err);
-        alert("Invalid email or password.");
-      }
+} catch (err) {
+  console.error("Login error:", err.code, err.message);
+  alert("Login failed: " + err.code);
+}
     });
   }
 
@@ -434,5 +434,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
