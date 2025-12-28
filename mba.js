@@ -105,7 +105,7 @@ function loadQAData() {
   catch { return []; }
 }
 function saveQAData(data) { localStorage.setItem("qaData", JSON.stringify(data)); }
-sc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
 
 // ===== Section helpers & item rendering =====
 function ensureSection(category) {
@@ -433,6 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
