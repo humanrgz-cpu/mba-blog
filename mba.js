@@ -163,18 +163,6 @@ function addToLog(entry) {
 // ===== Main initializer =====
 let __qaBound = false;
 function initApp() {
-    if (__qaBound) return;
-  __qaBound = true;
-
-  console.log("initApp is running, binding controls…");
-
-
-  if (!container) {
-    console.warn("No .container found!");
-    return;
-  }
-
-
   __qaBound = true;
 
   const container = document.querySelector(".container");
@@ -445,6 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
