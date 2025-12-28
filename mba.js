@@ -164,6 +164,19 @@ function addToLog(entry) {
 let __qaBound = false;
 function initApp() {
   __qaBound = true;
+    if (__qaBound) return;
+  __qaBound = true;
+
+  console.log("initApp is running, binding controls…");
+
+  const container = document.querySelector(".container");
+  if (!container) {
+    console.warn("No .container found!");
+    return;
+  }
+
+
+  __qaBound = true;
 
   if (!container) return;
 
@@ -432,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
