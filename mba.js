@@ -1,3 +1,8 @@
+loginForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  console.log("Login handler attached and running");
+});
+
 // ===== Firebase setup (ES modules) =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
 import {
@@ -455,6 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
