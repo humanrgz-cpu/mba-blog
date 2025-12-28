@@ -415,5 +415,44 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+document.addEventListener("DOMContentLoaded", () => {
+  const loginForm = document.getElementById("loginScreen");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const role = await getRole(userCred.user.uid);
+        showAppForRole(role, email);
+        initApp();
+      } catch (err) {
+        console.error(err);
+        alert("Invalid email or password.");
+      }
+    });
+  }
+
+  if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+      hideApp();
+    };
+  }
+
+  // Keep your onAuthStateChanged listener here too:
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const role = await getRole(user.uid);
+      showAppForRole(role, user.email || "");
+      initApp();
+    } else {
+      hideApp();
+    }
+  });
+});
 
 
