@@ -109,7 +109,7 @@ sc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt
 
 // ===== Section helpers & item rendering =====
 function ensureSection(category) {
-
+  const container = document.querySelector(".container");
   if (!container) return null;
   let section = Array.from(container.querySelectorAll(":scope > details"))
     .find(d => (d.querySelector(":scope > summary")?.textContent.trim() || "") === category.trim());
@@ -164,20 +164,8 @@ function addToLog(entry) {
 let __qaBound = false;
 function initApp() {
   __qaBound = true;
-    if (__qaBound) return;
-  __qaBound = true;
-
-  console.log("initApp is running, binding controls…");
 
   const container = document.querySelector(".container");
-  if (!container) {
-    console.warn("No .container found!");
-    return;
-  }
-
-
-  __qaBound = true;
-
   if (!container) return;
 
   // Section controls: expand/collapse/read Q&A
@@ -445,10 +433,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
-
-
-
 
 
 
