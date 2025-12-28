@@ -168,7 +168,7 @@ function initApp() {
 
   console.log("initApp is running, binding controls…");
 
-  const container = document.querySelector(".container");
+
   if (!container) {
     console.warn("No .container found!");
     return;
@@ -445,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
