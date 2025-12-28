@@ -19,7 +19,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyA1m80OnKDqLHrOyIMD3at1CblFfvh64X8",
   authDomain: "mba-qa-46f51.firebaseapp.com",
   projectId: "mba-qa-46f51",
-  storageBucket: "mba-qa-46f51.firebasestorage.app",
+  storageBucket: "mba-qa-46f51.appspot.com",   // ✅ fix this line
   messagingSenderId: "554345717376",
   appId: "1:554345717376:web:907bb2ae83e891a36ed065"
 };
@@ -415,4 +415,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
