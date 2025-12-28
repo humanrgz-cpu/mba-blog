@@ -283,41 +283,42 @@ function initApp() {
   }
 
   // Excel import
-  const excelInput = document.getElementById("excelFile");
-  const importBtn = document.getElementById("importExcel");
-  if (excelInput && importBtn) {
-    importBtn.onclick = async () => {
-      if (window.__currentRole === "normal") { alert("Not allowed."); return; }
-      const file = excelInput.files?.[0];
-      if (!file) { alert("Choose an Excel file first."); return; }
-      const data = await file.arrayBuffer();
-      const wb = XLSX.read(data);
-      const firstSheet = wb.SheetNames[0];
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 });
-      // Expect columns: Category | Question | Answer
-      const out = loadQAData();
-      rows.slice(1).forEach(r => {
-        const [category, question, answer] = r;
-        if (!category || !question || !answer) return;
-        const id = String(Date.now() + Math.random());
-        insertQA(String(category), String(question), String(answer), id);
-        out.push({
-          id,
-          category: String(category),
-          question: String(question),
-          answer: String(answer)
-        });
-        addToLog({
-          id,
-          category: String(category),
-          question: String(question),
-          answer: String(answer)
-        });
+// Excel import
+const excelInput = document.getElementById("excelFile");
+const importBtn = document.getElementById("importExcel");
+if (excelInput && importBtn) {
+  importBtn.onclick = async () => {
+    if (window.__currentRole === "normal") { alert("Not allowed."); return; }
+    const file = excelInput.files?.[0];
+    if (!file) { alert("Choose an Excel file first."); return; }
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const firstSheet = wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[firstSheet], { header: 1 });
+    // Expect columns: Category | Question | Answer
+    const out = loadQAData();
+    rows.slice(1).forEach(r => {
+      const [category, question, answer] = r;
+      if (!category || !question || !answer) return;
+      const id = String(Date.now() + Math.random());
+      insertQA(String(category), String(question), String(answer), id);
+      out.push({
+        id,
+        category: String(category),
+        question: String(question),
+        answer: String(answer)
       });
-      saveQAData(out);
-      alert("Import completed.");
-    };
-  }
+      addToLog({
+        id,
+        category: String(category),
+        question: String(question),
+        answer: String(answer)
+      });
+    });
+    saveQAData(out);
+    alert("Import completed.");
+  };
+}
 
   // Search
   const searchInput = document.getElementById("searchInput");
@@ -431,3 +432,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
