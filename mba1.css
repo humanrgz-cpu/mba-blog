@@ -130,70 +130,90 @@ summary {
 
 /* Print */
 @media print {
-  /* Hide interactive controls */
-  #userPanel,
-  #manageUsersPanel,
-  #toggleInputs,
-  #saveQA,
-  #importExcel,
-  #excelFile,
-  #logTitle,
-  #changeLog,
-  #searchArea,
-  #loginScreen,
   #backToTop,
-  .toolbar,
+  #changeLog,
+  #excelFile,
+  #importExcel,
+  #logTitle,
+  #loginScreen,
+  #manageUsersPanel,
+  #saveQA,
+  #searchArea,
+  #toggleInputs,
+  #userPanel,
+  #greeting,              /* added here */
   .section-toolbar,
   .sidebar,
+  .small,
+  .tip,
+  .toolbar,
   button {
     display: none !important;
   }
 
-
   body {
     background: #fff;
     color: #000;
-    line-height: 1.6;
-    margin: 20mm; /* standard margins */
+    line-height: 2;
+    margin: 20mm;
   }
-  .layout {
-    display: block !important; /* collapse sidebar */
 
-  .container { max-width:none;   width: 100% !important; margin:0; }
-  details, .qa details {
-    border:none !important; background:none !important; padding:0 !important;
-    margin: 0 0 10px 0 !important;
-    page-break-inside: avoid; break-inside: avoid;
+  .layout {
+    display: block !important;
   }
-  /* Force each category to start on a new page */
+
+  .container {
+    max-width: none;
+    width: 100% !important;
+    margin: 0;
+  }
+
+  .qa details,
+  details {
+    border: none !important;
+    background: 0 0 !important;
+    padding: 0 !important;
+    margin: 0 0 10px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
   .container > details {
-    page-break-before: always;   /* older browsers */
-    break-before: page;          /* modern browsers */
+    page-break-before: always;
+    break-before: page;
   }
+
   .container > details:first-of-type {
     page-break-before: auto;
     break-before: auto;
   }
 
-
-  /* Hide helper text */
-  .small,
-  .tip {
-    display: none !important;
+  header h1 {
+    position: running(pageHeader);
   }
-  header h1 { position: running(pageHeader); }
+
   @page {
-    margin: 0mm;
-    @top-center { content: element(pageHeader); }
+    margin: 0;
+    @top-center {
+      content: element(pageHeader);
+    }
   }
 
+  summary {
+    display: block;
+    font-weight: 700;
+    margin: 8px 0;
+  }
 
+  .qa {
+    counter-reset: question;
+  }
 
-  summary { display:block; font-weight:bold; margin:8px 0; }
-  .qa { counter-reset: question; }
   .qa details summary .summary-text::before {
-    counter-increment: question; content: counter(question) ". ";
-    font-weight:bold; margin-right:6px;
+    counter-increment: question;
+    content: counter(question) ". ";
+    font-weight: 700;
+    margin-right: 6px;
   }
 }
   .logout-btn {
