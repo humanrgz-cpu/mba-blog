@@ -304,30 +304,36 @@ function initApp() {
   }
 
   // Search
-  const searchInput = document.getElementById("searchInput");
-  const searchResults = document.getElementById("searchResults");
-  if (searchInput && searchResults) {
-    searchInput.addEventListener("input", () => {
-      const term = searchInput.value.toLowerCase().trim();
-      searchResults.innerHTML = "";
-      if (!term) return;
-      const matches = loadQAData().filter(d =>
-        d.question.toLowerCase().includes(term) || d.answer.toLowerCase().includes(term) || d.category.toLowerCase().includes(term)
-      );
-      matches.forEach(d => {
-        const div = document.createElement("div");
-        div.textContent = `${d.category} — ${d.question}`;
-        div.onclick = () => {
-          const el = document.querySelector(`details[data-id='${CSS.escape(d.id)}']`);
-          if (!el) return;
-          el.closest("details")?.open = true;
-          el.open = true;
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-        };
-        searchResults.appendChild(div);
-      });
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+
+if (searchInput && searchResults) {
+  searchInput.addEventListener("input", () => {
+    const term = searchInput.value.toLowerCase().trim();
+    searchResults.innerHTML = "";
+    if (!term) return;
+
+    const matches = loadQAData().filter(d =>
+      (d.question || "").toLowerCase().includes(term) ||
+      (d.answer || "").toLowerCase().includes(term) ||
+      (d.category || "").toLowerCase().includes(term)
+    );
+
+    matches.forEach(d => {
+      const div = document.createElement("div");
+      div.textContent = `${d.category} — ${d.question}`;
+      div.onclick = () => {
+        // safer selector without CSS.escape
+        const el = document.querySelector("details[data-id='" + d.id + "']");
+        if (!el) return;
+        el.closest("details")?.open = true;
+        el.open = true;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+      searchResults.appendChild(div);
     });
-  }
+  });
+}
 
   // Print
   const printBtn = document.getElementById("printDoc");
@@ -409,3 +415,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
