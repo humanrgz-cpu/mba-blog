@@ -165,7 +165,6 @@ let __qaBound = false;
 function initApp() {
   __qaBound = true;
 
-  const container = document.querySelector(".container");
   if (!container) return;
 
   // Section controls: expand/collapse/read Q&A
@@ -433,6 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
