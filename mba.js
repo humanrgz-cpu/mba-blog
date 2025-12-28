@@ -341,13 +341,10 @@ if (excelInput && importBtn) {
         div.onclick = () => {
           const el = document.querySelector(`details[data-id="${d.id}"]`);
           if (!el) return;
-          const parentDetails = el.closest("details");
+const parentDetails = el.closest("details");
 if (parentDetails) {
   parentDetails.open = true;
 }
-
-
-          el.open = true;
           el.scrollIntoView({ behavior: "smooth", block: "center" });
         };
         searchResults.appendChild(div);
