@@ -1,8 +1,3 @@
-loginForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  console.log("Login handler attached and running");
-});
-
 // ===== Firebase setup (ES modules) =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
 import {
@@ -20,11 +15,15 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
+// IMPORTANT: Ensure Email/Password sign-in is enabled in Firebase Authentication.
+// Also ensure your HTML includes XLSX via:
+// <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 const firebaseConfig = {
   apiKey: "AIzaSyA1m80OnKDqLHrOyIMD3at1CblFfvh64X8",
   authDomain: "mba-qa-46f51.firebaseapp.com",
   projectId: "mba-qa-46f51",
-  storageBucket: "mba-qa-46f51.appspot.com",   // ✅ fix this line
+  storageBucket: "mba-qa-46f51.appspot.com",
   messagingSenderId: "554345717376",
   appId: "1:554345717376:web:907bb2ae83e891a36ed065"
 };
@@ -69,14 +68,14 @@ async function removeUser(currentRole, email) {
   return { ok: true, msg: "User removed." };
 }
 
-// ===== UI helpers (match your HTML) =====
+// ===== UI helpers =====
 function showAppForRole(role, email) {
   window.__currentRole = role;
   const loginScreen = document.getElementById("loginScreen");
   const appContent = document.getElementById("appContent");
   const searchArea = document.getElementById("searchArea");
   const logoutBtn = document.getElementById("logoutBtn");
-  const greeting = document.querySelector("#greeting"); // first occurrence only
+  const greeting = document.querySelector("#greeting");
 
   if (loginScreen) loginScreen.style.display = "none";
   if (appContent) appContent.style.display = "block";
@@ -100,7 +99,7 @@ function hideApp() {
   if (greeting) greeting.textContent = "";
 }
 
-// ===== Q&A content storage (localStorage) =====
+// ===== Q&A storage =====
 function loadQAData() {
   try { return JSON.parse(localStorage.getItem("qaData")) || []; }
   catch { return []; }
@@ -108,7 +107,7 @@ function loadQAData() {
 function saveQAData(data) { localStorage.setItem("qaData", JSON.stringify(data)); }
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
-// Ensure a section exists (matches your plain <details> layout)
+// ===== Section helpers & item rendering =====
 function ensureSection(category) {
   const container = document.querySelector(".container");
   if (!container) return null;
@@ -144,9 +143,9 @@ function insertQA(category, question, answer, id) {
   item.innerHTML = `
     <summary>
       <span class="summary-text">${esc(question)}</span>
-      <button class="icon-btn deleteQA"></button>
-      <button class="icon-btn editQA"></button>
-      <button class="icon-btn playQA"></button>
+      <button class="icon-btn deleteQA" title="Delete"></button>
+      <button class="icon-btn editQA" title="Edit"></button>
+      <button class="icon-btn playQA" title="Play"></button>
     </summary>
     <div class="answer">${esc(answer)}</div>`;
   qa.appendChild(item);
@@ -161,7 +160,7 @@ function addToLog(entry) {
   list.appendChild(li);
 }
 
-// ===== Main initializer (bind once) =====
+// ===== Main initializer =====
 let __qaBound = false;
 function initApp() {
   if (__qaBound) return;
@@ -170,7 +169,7 @@ function initApp() {
   const container = document.querySelector(".container");
   if (!container) return;
 
-  // Section controls
+  // Section controls: expand/collapse/read Q&A
   container.addEventListener("click", e => {
     const expandBtn = e.target.closest(".expand-section");
     const collapseBtn = e.target.closest(".collapse-section");
@@ -187,7 +186,7 @@ function initApp() {
       const sec = readQBtn.closest("details");
       const summaries = Array.from(sec?.querySelectorAll(".qa > details > summary") || []);
       if (!summaries.length) { alert("No questions in this category."); return; }
-      const s = summaries[Math.floor(Math.random()*summaries.length)];
+      const s = summaries[Math.floor(Math.random() * summaries.length)];
       const q = s.querySelector(".summary-text")?.textContent.trim() || s.textContent.trim();
       speechSynthesis.speak(new SpeechSynthesisUtterance(q));
       sec.dataset.lastId = s.parentElement.getAttribute("data-id") || "";
@@ -195,7 +194,8 @@ function initApp() {
     if (readABtn) {
       const sec = readABtn.closest("details");
       const lastId = sec?.dataset?.lastId || "";
-      const a = (lastId ? sec.querySelector(`details[data-id='${lastId}']`) : null)?.querySelector(".answer")?.textContent.trim() || "No answer found.";
+      const a = (lastId ? sec.querySelector(`details[data-id='${lastId}']`) : null)
+        ?.querySelector(".answer")?.textContent.trim() || "No answer found.";
       speechSynthesis.speak(new SpeechSynthesisUtterance(a));
     }
   });
@@ -215,7 +215,9 @@ function initApp() {
       const a1 = prompt("Edit answer:", aEl.textContent.trim()); if (a1 == null) return;
       qEl.textContent = q1; aEl.textContent = a1;
       const id = item.getAttribute("data-id");
-      saveQAData(loadQAData().map(d => String(d.id) === String(id) ? { ...d, question:q1, answer:a1 } : d));
+      saveQAData(loadQAData().map(d => String(d.id) === String(id)
+        ? { ...d, question: q1, answer: a1 }
+        : d));
     }
 
     if (delBtn) {
@@ -224,7 +226,7 @@ function initApp() {
       const id = item.getAttribute("data-id");
       item.remove();
       saveQAData(loadQAData().filter(d => String(d.id) !== String(id)));
-      const logEntry = document.querySelector(`#changeLog li[data-id='${CSS.escape(String(id))}']`);
+      const logEntry = document.querySelector(`#changeLog li[data-id="${id}"]`);
       if (logEntry) logEntry.remove();
     }
 
@@ -237,9 +239,8 @@ function initApp() {
     }
   });
 
-  // Toggle Add Q&A panel (uses your sidebar button and panel)
+  // Toggle Add Q&A panel (sidebar)
   const toggleInputs = document.getElementById("toggleInputs");
-  // Prefer sidebar userPanel (the one with form and Excel)
   const userPanels = Array.from(document.querySelectorAll("#userPanel"));
   const userPanel = userPanels[userPanels.length - 1] || null;
   if (toggleInputs && userPanel) {
@@ -251,7 +252,7 @@ function initApp() {
     };
   }
 
-  // Manage Users toggle (IDs in your sidebar)
+  // Manage Users toggle
   const manageUsersToggle = document.getElementById("manageUsersToggle");
   const manageUsersPanel = document.getElementById("manageUsersPanel");
   if (manageUsersToggle && manageUsersPanel) {
@@ -261,7 +262,7 @@ function initApp() {
     };
   }
 
-  // Save new Q&A (matches your IDs)
+  // Save new Q&A (IDs must exist)
   const saveBtn = document.getElementById("saveQA");
   const catSel = document.getElementById("categorySelect");
   const newQ = document.getElementById("newQuestion");
@@ -269,9 +270,9 @@ function initApp() {
   if (saveBtn && catSel && newQ && newA) {
     saveBtn.onclick = () => {
       if (window.__currentRole === "normal") { alert("Not allowed."); return; }
-      const category = catSel.value.trim();
-      const question = newQ.value.trim();
-      const answer = newA.value.trim();
+      const category = (catSel.value || "").trim();
+      const question = (newQ.value || "").trim();
+      const answer = (newA.value || "").trim();
       if (!category || !question || !answer) { alert("Please fill all fields."); return; }
       const id = String(Date.now());
       insertQA(category, question, answer, id);
@@ -281,7 +282,7 @@ function initApp() {
     };
   }
 
-  // Excel import (your IDs)
+  // Excel import
   const excelInput = document.getElementById("excelFile");
   const importBtn = document.getElementById("importExcel");
   if (excelInput && importBtn) {
@@ -300,8 +301,18 @@ function initApp() {
         if (!category || !question || !answer) return;
         const id = String(Date.now() + Math.random());
         insertQA(String(category), String(question), String(answer), id);
-        out.push({ id, category: String(category), question: String(question), answer: String(answer) });
-        addToLog({ id, category: String(category), question: String(question), answer: String(answer) });
+        out.push({
+          id,
+          category: String(category),
+          question: String(question),
+          answer: String(answer)
+        });
+        addToLog({
+          id,
+          category: String(category),
+          question: String(question),
+          answer: String(answer)
+        });
       });
       saveQAData(out);
       alert("Import completed.");
@@ -309,38 +320,36 @@ function initApp() {
   }
 
   // Search
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
+  const searchInput = document.getElementById("searchInput");
+  const searchResults = document.getElementById("searchResults");
+  if (searchInput && searchResults) {
+    searchInput.addEventListener("input", () => {
+      const term = (searchInput.value || "").toLowerCase().trim();
+      searchResults.innerHTML = "";
+      if (!term) return;
 
-if (searchInput && searchResults) {
-  searchInput.addEventListener("input", () => {
-    const term = searchInput.value.toLowerCase().trim();
-    searchResults.innerHTML = "";
-    if (!term) return;
+      const matches = loadQAData().filter(d =>
+        (d.question || "").toLowerCase().includes(term) ||
+        (d.answer || "").toLowerCase().includes(term) ||
+        (d.category || "").toLowerCase().includes(term)
+      );
 
-    const matches = loadQAData().filter(d =>
-      (d.question || "").toLowerCase().includes(term) ||
-      (d.answer || "").toLowerCase().includes(term) ||
-      (d.category || "").toLowerCase().includes(term)
-    );
-
-    matches.forEach(d => {
-      const div = document.createElement("div");
-      div.textContent = `${d.category} — ${d.question}`;
-      div.onclick = () => {
-        // safer selector without CSS.escape
-        const el = document.querySelector("details[data-id='" + d.id + "']");
-        if (!el) return;
-        el.closest("details")?.open = true;
-        el.open = true;
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      };
-      searchResults.appendChild(div);
+      matches.forEach(d => {
+        const div = document.createElement("div");
+        div.textContent = `${d.category} — ${d.question}`;
+        div.onclick = () => {
+          const el = document.querySelector(`details[data-id="${d.id}"]`);
+          if (!el) return;
+          el.closest("details")?.open = true;
+          el.open = true;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        };
+        searchResults.appendChild(div);
+      });
     });
-  });
-}
+  }
 
-  // Print
+  // Print (open all sections and items, then print)
   const printBtn = document.getElementById("printDoc");
   if (printBtn) {
     printBtn.onclick = () => {
@@ -361,35 +370,8 @@ if (searchInput && searchResults) {
     });
     backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   }
-}
 
-// ===== Wiring: match your login form IDs =====
-document.addEventListener("DOMContentLoaded", () => {
-  const loginForm = document.getElementById("loginScreen");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("email")?.value.trim() || "";
-      const password = document.getElementById("password")?.value.trim() || "";
-      try {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        const role = await getRole(userCred.user.uid);
-        showAppForRole(role, email);
-        initApp();
-      } catch (err) {
-        console.error(err);
-        alert("Invalid email or password.");
-      }
-    });
-  }
-
-  if (logoutBtn) {
-    logoutBtn.onclick = async () => { await signOut(auth); hideApp(); };
-  }
-
-  // Manage Users panel (uses muUsername from your HTML)
+  // Manage Users buttons (inside manageUsersPanel)
   const muAddBtn = document.getElementById("muAddBtn");
   const muRemoveBtn = document.getElementById("muRemoveBtn");
   if (muAddBtn) {
@@ -408,29 +390,18 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(res.msg);
     };
   }
+}
 
-  // Auth state drives UI
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const role = await getRole(user.uid);
-      showAppForRole(role, user.email || "");
-      initApp();
-    } else {
-      hideApp();
-    }
-  });
-});
+// ===== Login/logout/auth wiring =====
 document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginScreen");
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault(); // 🔑 stops the page refresh
-
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-
+      e.preventDefault();
+      const email = document.getElementById("email")?.value.trim() || "";
+      const password = document.getElementById("password")?.value.trim() || "";
       try {
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const role = await getRole(userCred.user.uid);
@@ -460,7 +431,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
-
-
-
