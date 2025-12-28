@@ -109,7 +109,7 @@ sc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt
 
 // ===== Section helpers & item rendering =====
 function ensureSection(category) {
-  const container = document.querySelector(".container");
+
   if (!container) return null;
   let section = Array.from(container.querySelectorAll(":scope > details"))
     .find(d => (d.querySelector(":scope > summary")?.textContent.trim() || "") === category.trim());
@@ -445,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
 
